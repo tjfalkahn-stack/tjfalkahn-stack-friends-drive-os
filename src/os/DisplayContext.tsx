@@ -9,6 +9,37 @@ import {
 
 const manager = new DisplayProfileManager()
 
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await Promise.race([
+        navigator.clipboard.writeText(text),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('clipboard timeout')), 400)
+        }),
+      ])
+      return true
+    }
+  } catch {
+    // fall through to execCommand
+  }
+
+  try {
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('readonly', '')
+    area.style.position = 'fixed'
+    area.style.left = '-9999px'
+    document.body.appendChild(area)
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
+
 type DisplayContextValue = {
   snapshot: DetectionSnapshot | null
   setOverride: (mode: OverrideMode) => void
@@ -49,15 +80,9 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
         const current = manager.getSnapshot()
         if (!current) return ''
         const report = formatDisplayReport(current)
-        try {
-          await navigator.clipboard.writeText(report)
-        } catch {
-          const area = document.createElement('textarea')
-          area.value = report
-          document.body.appendChild(area)
-          area.select()
-          document.execCommand('copy')
-          area.remove()
+        const copied = await writeClipboard(report)
+        if (!copied) {
+          console.warn('Friends Drive OS could not write the clipboard; report is still available to copy manually.')
         }
         return report
       },

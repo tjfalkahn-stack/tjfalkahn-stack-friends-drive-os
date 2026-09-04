@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { layoutLabel } from '../display/applyProfile'
+import { formatDisplayReport } from '../display/report'
 import { OVERRIDE_OPTIONS } from '../display/types'
 import { useDisplay } from '../os/DisplayContext'
 
@@ -15,6 +16,8 @@ export function SettingsModule() {
       </div>
     )
   }
+
+  const report = formatDisplayReport(snapshot)
 
   const { detectedProfile, detectedConfidence, applied, overrideMode, runtime } = snapshot
   const calibration = snapshot.applied
@@ -159,15 +162,23 @@ export function SettingsModule() {
           </dl>
           <button
             type="button"
-            className="primary"
-            onClick={async () => {
-              await copyReport()
+            className={`primary ${copied ? 'is-on' : ''}`}
+            aria-live="polite"
+            onPointerUp={() => {
               setCopied(true)
-              window.setTimeout(() => setCopied(false), 1600)
+              void copyReport()
+            }}
+            onClick={() => {
+              setCopied(true)
+              void copyReport()
             }}
           >
             {copied ? 'Copied' : 'Copy Display Report'}
           </button>
+          {copied ? <p className="copy-status">Display report copied. You can also select the text below.</p> : null}
+          <pre className="display-report" aria-label="Display report">
+            {report}
+          </pre>
         </div>
       )}
     </div>

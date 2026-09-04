@@ -699,3 +699,19 @@ html[data-vehicle='tesla'] {
 html[data-layout='ram-hdmi-bridge'] .shell {
   background: radial-gradient(circle at 50% 50%, #16110d, #0c0e12 72%);
 }
+
+.copy-status {
+  color: var(--fd-sage);
+  margin: 0;
+}
+
+.display-report {
+  white-space: pre-wrap;
+  background: #0a0c10;
+  border: 1px solid var(--fd-line);
+  border-radius: 16px;
+  padding: 14px;
+  color: var(--fd-muted);
+  font-size: 0.82em;
+  line-height: 1.45;
+}
