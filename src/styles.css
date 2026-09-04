@@ -715,8 +715,11 @@ html[data-layout='ram-hdmi-bridge'] .shell {
   font-size: 0.95em;
 }
 
-.remember-as strong {
-  color: var(--fd-copper);
+.remember-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
 }
 
 .display-report {

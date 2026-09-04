@@ -129,6 +129,7 @@ export type ProfileCalibration = {
 }
 
 export type PersistedDisplayState = {
+  version: number
   lastDetectedProfileId: string | null
   overrideMode: OverrideMode
   calibrations: Record<string, ProfileCalibration>
@@ -176,7 +177,9 @@ export type DisplayManagerEvent = {
 
 export const CONFIDENCE_THRESHOLD = 64
 
-export const DISPLAY_STORAGE_KEY = 'friends-drive-os.display.v1'
+export const DISPLAY_STORAGE_VERSION = 2
+export const DISPLAY_STORAGE_KEY = 'friends-drive-os.display.v2'
+export const DISPLAY_STORAGE_LEGACY_KEYS = ['friends-drive-os.display.v1'] as const
 
 export const OVERRIDE_OPTIONS: Array<{ mode: OverrideMode; label: string }> = [
   { mode: 'AUTO', label: 'AUTO' },

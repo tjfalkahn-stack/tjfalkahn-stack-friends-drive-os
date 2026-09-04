@@ -1,9 +1,10 @@
 import { applyProfileToDocument, buildAppliedProfile, resolveLayout } from './applyProfile'
+import { rememberTargetId } from './rememberedDisplay'
 import { collectIdentitySignals, withFingerprintMatch } from './identity'
 import { matchDisplayProfile } from './matcher'
 import { DISPLAY_PROFILES, getProfileById } from './profiles'
 import { collectDisplayRuntime } from './runtime'
-import { createLocalStorageAdapter, mergeCalibration, type DisplayStorage } from './storage'
+import { createLocalStorageAdapter, mergeCalibration, resetRememberedDisplayState, type DisplayStorage } from './storage'
 import type {
   AppliedProfile,
   DetectionSnapshot,
@@ -157,18 +158,25 @@ export class DisplayProfileManager {
     return this.detectAndApply('calibration', { debounce: false })
   }
 
-  rememberFingerprint(profileId?: string, fingerprint?: string): DetectionSnapshot {
+  rememberFingerprint(profileId?: string, fingerprint?: string, options: { overwrite?: boolean } = {}): DetectionSnapshot {
     const runtime = this.environment.collectRuntime()
-    const id = profileId ?? this.snapshot?.activeProfile.id
-    if (!id) {
-      return this.snapshot ?? this.detectAndApply('identity', { debounce: false })
+    const snapshot = this.snapshot
+    const targetId =
+      profileId ??
+      (snapshot ? rememberTargetId(this.persisted.overrideMode, snapshot.detectedProfile, snapshot.activeProfile) : undefined)
+    if (!targetId) {
+      return snapshot ?? this.detectAndApply('identity', { debounce: false })
     }
     const key = fingerprint ?? runtime.hardwareFingerprint
+    const existing = this.persisted.fingerprints[key]
+    if (existing && existing !== targetId && !options.overwrite) {
+      return snapshot ?? this.detectAndApply('identity', { debounce: false })
+    }
     this.persisted = {
       ...this.persisted,
       fingerprints: {
         ...this.persisted.fingerprints,
-        [key]: id,
+        [key]: targetId,
       },
     }
     this.storage.save(this.persisted)
@@ -181,6 +189,12 @@ export class DisplayProfileManager {
     const fingerprints = { ...this.persisted.fingerprints }
     delete fingerprints[key]
     this.persisted = { ...this.persisted, fingerprints }
+    this.storage.save(this.persisted)
+    return this.detectAndApply('identity', { debounce: false })
+  }
+
+  resetDisplayMemory(options: { resetOverride?: boolean } = {}): DetectionSnapshot {
+    this.persisted = resetRememberedDisplayState(this.persisted, options)
     this.storage.save(this.persisted)
     return this.detectAndApply('identity', { debounce: false })
   }

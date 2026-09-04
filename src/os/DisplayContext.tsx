@@ -45,6 +45,9 @@ type DisplayContextValue = {
   setOverride: (mode: OverrideMode) => void
   setCalibration: (profileId: string, patch: ProfileCalibration) => void
   rememberDisplay: () => void
+  updateRememberedDisplay: () => void
+  forgetRememberedDisplay: () => void
+  resetDisplayMemory: (options?: { resetOverride?: boolean }) => void
   copyReport: () => Promise<string>
 }
 
@@ -74,7 +77,22 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       rememberDisplay: () => {
         const current = manager.getSnapshot()
         if (!current) return
-        setSnapshot(manager.rememberFingerprint(current.activeProfile.id))
+        const profileId =
+          current.overrideMode === 'AUTO' ? current.detectedProfile.id : current.activeProfile.id
+        setSnapshot(manager.rememberFingerprint(profileId))
+      },
+      updateRememberedDisplay: () => {
+        const current = manager.getSnapshot()
+        if (!current) return
+        const profileId =
+          current.overrideMode === 'AUTO' ? current.detectedProfile.id : current.activeProfile.id
+        setSnapshot(manager.rememberFingerprint(profileId, current.runtime.hardwareFingerprint, { overwrite: true }))
+      },
+      forgetRememberedDisplay: () => {
+        setSnapshot(manager.forgetFingerprint())
+      },
+      resetDisplayMemory: (options) => {
+        setSnapshot(manager.resetDisplayMemory(options))
       },
       copyReport: async () => {
         const current = manager.getSnapshot()

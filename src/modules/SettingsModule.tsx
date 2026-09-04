@@ -1,11 +1,21 @@
 import { useState } from 'react'
 import { layoutLabel } from '../display/applyProfile'
+import { describeRememberedDisplay } from '../display/rememberedDisplay'
 import { formatDisplayReport } from '../display/report'
 import { OVERRIDE_OPTIONS } from '../display/types'
 import { useDisplay } from '../os/DisplayContext'
 
 export function SettingsModule() {
-  const { snapshot, setOverride, setCalibration, rememberDisplay, copyReport } = useDisplay()
+  const {
+    snapshot,
+    setOverride,
+    setCalibration,
+    rememberDisplay,
+    updateRememberedDisplay,
+    forgetRememberedDisplay,
+    resetDisplayMemory,
+    copyReport,
+  } = useDisplay()
   const [copied, setCopied] = useState(false)
   const [tab, setTab] = useState<'display' | 'diagnostics'>('display')
 
@@ -20,6 +30,17 @@ export function SettingsModule() {
   const report = formatDisplayReport(snapshot)
 
   const { detectedProfile, detectedConfidence, applied, overrideMode, runtime } = snapshot
+  const currentFingerprint = runtime.hardwareFingerprint
+  const currentDetectedProfile = detectedProfile
+  const currentActiveProfile = snapshot.activeProfile
+  const currentlyRememberedProfileForFingerprint = snapshot.identity.fingerprintProfileId ?? null
+  const remembered = describeRememberedDisplay({
+    currentFingerprint,
+    currentDetectedProfile,
+    currentActiveProfile,
+    currentlyRememberedProfileForFingerprint,
+    overrideMode,
+  })
   const calibration = snapshot.applied
   const profileId = applied.profile.id
 
@@ -115,23 +136,36 @@ export function SettingsModule() {
             <p className="fine">Calibration is saved per profile. RAM HDMI and Ford do not share values.</p>
           </fieldset>
 
-          <button type="button" className="primary" onClick={() => rememberDisplay()}>
-            Remember this display
-          </button>
-          <p className="remember-as">
-            Remember this display as:
-            <strong> {applied.profile.label}</strong>
-          </p>
-          {overrideMode !== 'AUTO' ? (
+          <fieldset>
+            <legend>Remembered display</legend>
+            <p className="remember-as">{remembered.headline}</p>
+            {remembered.forcedWarning ? <p className="fine">{remembered.forcedWarning}</p> : null}
+            {remembered.differsFromActive ? <p className="fine">Stored profile differs from current profile.</p> : null}
+            <p className="fine">Fingerprint: {currentFingerprint}</p>
+            <div className="remember-actions">
+              {remembered.status === 'unmapped' ? (
+                <button type="button" className="primary" onClick={() => rememberDisplay()}>
+                  Remember this display
+                </button>
+              ) : null}
+              {remembered.differsFromActive ? (
+                <button type="button" className="primary" onClick={() => updateRememberedDisplay()}>
+                  Update remembered profile to {remembered.rememberTargetLabel}
+                </button>
+              ) : null}
+              {currentlyRememberedProfileForFingerprint ? (
+                <button type="button" onClick={() => forgetRememberedDisplay()}>
+                  Forget remembered display
+                </button>
+              ) : null}
+            </div>
+            <button type="button" onClick={() => resetDisplayMemory({ resetOverride: true })}>
+              Reset Display Memory
+            </button>
             <p className="fine">
-              Mode is {overrideMode.replaceAll('_', ' ')}. Auto currently detects {detectedProfile.label}.
-              This stores {applied.profile.label}, not the Auto detection.
+              Reset clears fingerprint mappings and the display override. Per-profile calibration is kept.
             </p>
-          ) : snapshot.identity.fingerprintProfileId === applied.profile.id ? (
-            <p className="fine">This hardware fingerprint is already stored as {applied.profile.label}.</p>
-          ) : (
-            <p className="fine">Stores a hardware fingerprint for this screen so AUTO can recognize it later.</p>
-          )}
+          </fieldset>
         </div>
       ) : (
         <div className="settings-panel diagnostics">

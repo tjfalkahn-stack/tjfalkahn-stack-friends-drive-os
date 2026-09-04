@@ -1,3 +1,4 @@
+import { computeDisplayFingerprint, screenOrientation } from './fingerprint'
 import type { DisplayOrientation, DisplayRuntime } from './types'
 
 export function orientationFromAspect(aspectRatio: number): DisplayOrientation {
@@ -7,12 +8,17 @@ export function orientationFromAspect(aspectRatio: number): DisplayOrientation {
 export function computeHardwareFingerprint(input: {
   screenWidth: number
   screenHeight: number
-  availWidth: number
-  availHeight: number
+  availWidth?: number
+  availHeight?: number
   devicePixelRatio: number
+  orientation?: DisplayOrientation | null
 }): string {
-  const dpr = Math.round(input.devicePixelRatio * 100) / 100
-  return `${input.screenWidth}x${input.screenHeight}@${dpr}`
+  return computeDisplayFingerprint({
+    screenWidth: input.screenWidth,
+    screenHeight: input.screenHeight,
+    devicePixelRatio: input.devicePixelRatio,
+    orientation: input.orientation ?? screenOrientation(input.screenWidth, input.screenHeight),
+  })
 }
 
 export function isFullscreen(doc?: Document | null): boolean {
@@ -51,9 +57,8 @@ export function collectDisplayRuntime(
     hardwareFingerprint: computeHardwareFingerprint({
       screenWidth: screenObj?.width || innerWidth,
       screenHeight: screenObj?.height || innerHeight,
-      availWidth: screenObj?.availWidth || innerWidth,
-      availHeight: screenObj?.availHeight || innerHeight,
       devicePixelRatio: win.devicePixelRatio || 1,
+      orientation: screenOrientation(screenObj?.width || innerWidth, screenObj?.height || innerHeight),
     }),
   }
 }
@@ -87,9 +92,8 @@ export function runtimeFromPartial(partial: Partial<DisplayRuntime> & Pick<Displ
       computeHardwareFingerprint({
         screenWidth,
         screenHeight,
-        availWidth,
-        availHeight,
         devicePixelRatio,
+        orientation: partial.orientation ?? screenOrientation(screenWidth, screenHeight),
       }),
   }
 }
