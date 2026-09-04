@@ -1,11 +1,12 @@
 import type { DisplayProfile } from './types'
+import { VERIFIED_RAM_AV_CM01_ASPECT, VERIFIED_RAM_AV_CM01_SAMPLE } from './samples'
 
 /**
- * Initial display profiles.
+ * Display profiles.
  *
- * RAM native 12.4-inch pixels are intentionally unspecified. Until the
- * truck viewport is captured, RAM_12_4_PORTRAIT and RAM_AV_CM01 match
- * geometry *ranges* and HDMI-like aspect, not a fake exact resolution.
+ * RAM_AV_CM01 is locked to the verified MacBook → HDMI → AV-CM01 → RAM 12.4
+ * Uconnect *browser* geometry. Those numbers are not the LCD native panel
+ * resolution. RAM_12_4_PORTRAIT still matches a true portrait cockpit.
  */
 export const DISPLAY_PROFILES: DisplayProfile[] = [
   {
@@ -51,23 +52,36 @@ export const DISPLAY_PROFILES: DisplayProfile[] = [
     vehicle: 'ram',
     label: 'RAM AV-CM01',
     orientation: 'landscape',
-    minWidth: 1180,
-    maxWidth: 2048,
-    minHeight: 640,
-    maxHeight: 1200,
-    minAspect: 1.7,
-    maxAspect: 1.95,
-    preferredAspect: 16 / 9,
+    // Windowed sample is 1555×1081; ranges also cover Chrome fullscreen on the
+    // same MacBook (inner grows toward 1728×1117) without exact equality.
+    minWidth: 1400,
+    maxWidth: 1800,
+    preferredWidth: VERIFIED_RAM_AV_CM01_SAMPLE.innerWidth,
+    minHeight: 980,
+    maxHeight: 1180,
+    preferredHeight: VERIFIED_RAM_AV_CM01_SAMPLE.innerHeight,
+    minAspect: 1.32,
+    maxAspect: 1.62,
+    preferredAspect: VERIFIED_RAM_AV_CM01_ASPECT,
+    minScreenWidth: 1650,
+    maxScreenWidth: 1800,
+    preferredScreenWidth: VERIFIED_RAM_AV_CM01_SAMPLE.screenWidth,
+    minScreenHeight: 1050,
+    maxScreenHeight: 1180,
+    preferredScreenHeight: VERIFIED_RAM_AV_CM01_SAMPLE.screenHeight,
+    minDevicePixelRatio: 1.7,
+    maxDevicePixelRatio: 1.9,
+    targetDevicePixelRatio: 1.8,
     layout: 'ram-hdmi-bridge',
     specificity: 1,
     adapterIds: ['av-cm01', 'avcm01', 'ram-hdmi'],
     bridgeHints: {
       hdmiLike: true,
       portraitPanelTarget: 'ram-12-4',
-      typicalAspects: [16 / 9, 1280 / 720, 1920 / 1080],
+      typicalAspects: [VERIFIED_RAM_AV_CM01_ASPECT],
     },
-    safeArea: { top: 16, right: 28, bottom: 18, left: 28 },
-    touchTarget: 56,
+    safeArea: { top: 16, right: 20, bottom: 18, left: 20 },
+    touchTarget: 60,
     uiScale: 0.96,
   },
   {

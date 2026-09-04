@@ -74,7 +74,7 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       rememberDisplay: () => {
         const current = manager.getSnapshot()
         if (!current) return
-        setSnapshot(manager.rememberFingerprint(current.detectedProfile.id))
+        setSnapshot(manager.rememberFingerprint(current.activeProfile.id))
       },
       copyReport: async () => {
         const current = manager.getSnapshot()

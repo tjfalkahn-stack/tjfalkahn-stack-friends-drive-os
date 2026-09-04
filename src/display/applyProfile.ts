@@ -1,10 +1,11 @@
+import { computePhysicalMap } from './physicalMap'
 import type { AppliedProfile, DisplayProfile, DisplayRuntime, LayoutId } from './types'
 
 export type ResolvedLayout = AppliedProfile['resolvedLayout']
 
 const LAYOUT_TOKENS: Record<
   ResolvedLayout,
-  Omit<AppliedProfile, 'profile' | 'resolvedLayout' | 'uiScale' | 'safeArea' | 'touchTarget'>
+  Omit<AppliedProfile, 'profile' | 'resolvedLayout' | 'uiScale' | 'safeArea' | 'touchTarget' | 'physicalMap'>
 > = {
   'ram-portrait': {
     navPlacement: 'bottom',
@@ -22,7 +23,7 @@ const LAYOUT_TOKENS: Record<
     bottomRailHeight: 64,
     fontScale: 0.98,
     gridColumns: 3,
-    heroProportion: '21 / 9',
+    heroProportion: '1555 / 1081',
     mediaLayout: 'ram-hdmi-stage',
     browserLayout: 'ram-hdmi-browser',
     cameraLayout: 'ram-hdmi-quad',
@@ -92,13 +93,16 @@ export function buildAppliedProfile(
     ...profile.safeArea,
     ...calibration?.safeArea,
   }
+  const touchTarget = calibration?.touchTarget ?? profile.touchTarget
+  const physicalMap = computePhysicalMap(resolvedLayout, runtime, safeArea, touchTarget)
 
   return {
     profile,
     resolvedLayout,
     uiScale: calibration?.scale ?? profile.uiScale,
     safeArea,
-    touchTarget: calibration?.touchTarget ?? profile.touchTarget,
+    touchTarget,
+    physicalMap,
     ...tokens,
   }
 }
@@ -143,4 +147,9 @@ export function applyProfileToDocument(applied: AppliedProfile, root: HTMLElemen
   root.style.setProperty('--fd-bottom-rail', `${applied.bottomRailHeight}px`)
   root.style.setProperty('--fd-grid-columns', String(applied.gridColumns))
   root.style.setProperty('--fd-hero', applied.heroProportion)
+  root.style.setProperty('--fd-map-top', `${applied.physicalMap.topPct}%`)
+  root.style.setProperty('--fd-map-right', `${applied.physicalMap.rightPct}%`)
+  root.style.setProperty('--fd-map-bottom', `${applied.physicalMap.bottomPct}%`)
+  root.style.setProperty('--fd-map-left', `${applied.physicalMap.leftPct}%`)
+  root.dataset.mapCoverage = String(Math.round(applied.physicalMap.coverage * 100))
 }

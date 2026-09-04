@@ -9,7 +9,7 @@ The matcher scores geometry — orientation, width/height ranges, aspect ratio, 
 | Profile | When it wins | Layout |
 | --- | --- | --- |
 | `RAM_12_4_PORTRAIT` | Tall / portrait RAM-like viewport | RAM portrait cockpit |
-| `RAM_AV_CM01` | Landscape HDMI-like viewport (geometry ranges, not a claimed native RAM resolution) | RAM HDMI Bridge |
+| `RAM_AV_CM01` | Verified MacBook → HDMI → AV-CM01 browser geometry (~1555×1081 on a 1728×1117 @ ~1.8 screen). Not the RAM LCD native panel. | RAM HDMI Bridge |
 | `FORD_F250_12_LANDSCAPE` | 12-inch class landscape | Ford landscape shell |
 | `TESLA_MODEL_Y_LANDSCAPE` | Wide 16:10-class landscape | Tesla landscape shell |
 | `RAM_AUTO` | RAM family with either orientation | Resolves to portrait or HDMI |

@@ -3,6 +3,7 @@ import { DisplayProfileManager } from '../../src/display/DisplayProfileManager'
 import { matchDisplayProfile, scoreProfile } from '../../src/display/matcher'
 import { DISPLAY_PROFILES, getProfileById } from '../../src/display/profiles'
 import { runtimeFromPartial } from '../../src/display/runtime'
+import { verifiedRamAvCm01Runtime } from '../../src/display/samples'
 import { createMemoryStorage } from '../../src/display/storage'
 import { formatDisplayReport } from '../../src/display/report'
 import type { DisplayEnvironment, DisplayRuntime, OverrideMode } from '../../src/display'
@@ -11,21 +12,25 @@ function runtime(innerWidth: number, innerHeight: number, extras: Partial<Displa
   return runtimeFromPartial({ innerWidth, innerHeight, ...extras })
 }
 
-function createHarness(initial?: { innerWidth: number; innerHeight: number; overrideMode?: OverrideMode }) {
-  let innerWidth = initial?.innerWidth ?? 1280
-  let innerHeight = initial?.innerHeight ?? 800
+function createHarness(
+  initial?: Partial<DisplayRuntime> & { innerWidth?: number; innerHeight?: number; overrideMode?: OverrideMode },
+) {
+  const { overrideMode, ...runtimeSeed } = initial ?? {}
+  let current = runtime(
+    runtimeSeed.innerWidth ?? 1280,
+    runtimeSeed.innerHeight ?? 800,
+    runtimeSeed,
+  )
   const listeners = new Map<string, Set<EventListener>>()
   const applied: string[] = []
-  const storage = createMemoryStorage(
-    initial?.overrideMode ? { overrideMode: initial.overrideMode } : undefined,
-  )
+  const storage = createMemoryStorage(overrideMode ? { overrideMode } : undefined)
 
   const environment: DisplayEnvironment = {
-    collectRuntime: () => runtime(innerWidth, innerHeight),
+    collectRuntime: () => current,
     collectIdentity: (stored) => ({
       vehicle: stored.userSelectedVehicle,
       userSelectedVehicle: stored.userSelectedVehicle,
-      fingerprintProfileId: stored.fingerprints[runtime(innerWidth, innerHeight).hardwareFingerprint] ?? null,
+      fingerprintProfileId: stored.fingerprints[current.hardwareFingerprint] ?? null,
     }),
     addEventListener: (type, listener) => {
       const set = listeners.get(type) ?? new Set()
@@ -50,9 +55,17 @@ function createHarness(initial?: { innerWidth: number; innerHeight: number; over
     manager,
     applied,
     storage,
-    setSize(width: number, height: number) {
-      innerWidth = width
-      innerHeight = height
+    setSize(width: number, height: number, extras: Partial<DisplayRuntime> = {}) {
+      current = runtime(width, height, {
+        screenWidth: extras.screenWidth ?? width,
+        screenHeight: extras.screenHeight ?? height,
+        availWidth: extras.availWidth ?? extras.screenWidth ?? width,
+        availHeight: extras.availHeight ?? extras.screenHeight ?? height,
+        devicePixelRatio: extras.devicePixelRatio ?? 1,
+        orientationType: extras.orientationType,
+        fullscreen: extras.fullscreen ?? false,
+        ...extras,
+      })
     },
     fire(type: string) {
       for (const listener of listeners.get(type) ?? []) {
@@ -62,6 +75,8 @@ function createHarness(initial?: { innerWidth: number; innerHeight: number; over
   }
 }
 
+const avCm01 = verifiedRamAvCm01Runtime()
+
 describe('display profile matching', () => {
   it('selects RAM portrait for a tall RAM-like viewport', () => {
     const result = matchDisplayProfile(runtime(1080, 1920), DISPLAY_PROFILES)
@@ -70,11 +85,9 @@ describe('display profile matching', () => {
     expect(result.confidence).toBeGreaterThan(60)
   })
 
-  it('selects RAM HDMI for an AV-CM01-like 16:9 viewport', () => {
+  it('does not treat a generic 16:9 HDMI viewport as the verified AV-CM01 sample', () => {
     const result = matchDisplayProfile(runtime(1920, 1080), DISPLAY_PROFILES)
-    expect(result.winner.id).toBe('RAM_AV_CM01')
-    expect(result.winner.layout).toBe('ram-hdmi-bridge')
-    expect(result.usedFallback).toBe(false)
+    expect(result.winner.id).not.toBe('RAM_AV_CM01')
   })
 
   it('selects Ford for a 12-inch style landscape viewport', () => {
@@ -110,7 +123,7 @@ describe('display profile matching', () => {
 
 describe('DisplayProfileManager', () => {
   it('applies RAM HDMI bridge composition for AV-CM01-like geometry', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     const snapshot = manager.start()
     expect(snapshot.detectedProfile.id).toBe('RAM_AV_CM01')
     expect(snapshot.activeLayout).toBe('ram-hdmi-bridge')
@@ -120,7 +133,7 @@ describe('DisplayProfileManager', () => {
   })
 
   it('lets a manual override beat auto detection', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     manager.start()
     const forced = manager.setOverride('FORCE_TESLA')
     expect(forced.detectedProfile.id).toBe('RAM_AV_CM01')
@@ -155,7 +168,7 @@ describe('DisplayProfileManager', () => {
   })
 
   it('stores calibration per display profile', () => {
-    const { manager, storage } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager, storage } = createHarness(avCm01)
     manager.start()
     manager.setCalibration('RAM_AV_CM01', {
       scale: 1.12,
@@ -178,7 +191,7 @@ describe('DisplayProfileManager', () => {
   })
 
   it('applies per-profile calibration to the active profile only', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     manager.start()
     const snapshot = manager.setCalibration('RAM_AV_CM01', { scale: 1.2, touchTarget: 70 })
     expect(snapshot.applied.uiScale).toBe(1.2)
@@ -186,7 +199,7 @@ describe('DisplayProfileManager', () => {
   })
 
   it('does not re-enter apply when the same profile is detected again', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     const layouts: string[] = []
     manager.subscribe((event) => {
       if (event.snapshot.layoutChanged) {
@@ -207,7 +220,7 @@ describe('DisplayProfileManager', () => {
     const first = manager.start()
     expect(first.activeProfile.vehicle === 'tesla' || first.activeProfile.vehicle === 'generic').toBe(true)
 
-    setSize(1920, 1080)
+    setSize(avCm01.innerWidth, avCm01.innerHeight, avCm01)
     const ram = manager.detect()
     expect(ram.activeLayout).toBe('ram-hdmi-bridge')
     expect(ram.layoutChanged).toBe(true)
@@ -223,7 +236,7 @@ describe('DisplayProfileManager', () => {
   })
 
   it('RAM_AUTO resolves portrait vs HDMI from orientation', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     manager.start()
     const hdmi = manager.apply(getProfileById('RAM_AUTO')!)
     expect(hdmi.activeLayout).toBe('ram-hdmi-bridge')
@@ -239,7 +252,7 @@ describe('resize re-evaluation', () => {
     const started = manager.start()
     expect(started.activeProfile.id).toBe('GENERIC_PORTRAIT')
 
-    setSize(1920, 1080)
+    setSize(avCm01.innerWidth, avCm01.innerHeight, avCm01)
     fire('resize')
     expect(manager.getSnapshot()?.activeProfile.id).toBe('GENERIC_PORTRAIT')
 
@@ -250,7 +263,7 @@ describe('resize re-evaluation', () => {
   })
 
   it('does not thrash into a re-render loop on repeated resize of the same profile', async () => {
-    const { manager, fire } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager, fire } = createHarness(avCm01)
     let layoutChanges = 0
     manager.subscribe((event) => {
       if (event.snapshot.layoutChanged) layoutChanges += 1
@@ -268,14 +281,14 @@ describe('resize re-evaluation', () => {
 
 describe('display report', () => {
   it('formats the copyable diagnostics report', () => {
-    const { manager } = createHarness({ innerWidth: 1920, innerHeight: 1080 })
+    const { manager } = createHarness(avCm01)
     const snapshot = manager.start()
     const report = formatDisplayReport(snapshot)
     expect(report).toContain('Friends Drive OS Display Report')
     expect(report).toContain('Profile: RAM_AV_CM01')
     expect(report).toMatch(/Confidence: \d+%/)
-    expect(report).toContain('innerWidth: 1920')
-    expect(report).toContain('innerHeight: 1080')
+    expect(report).toContain('innerWidth: 1555')
+    expect(report).toContain('innerHeight: 1081')
     expect(report).toContain('devicePixelRatio:')
     expect(report).toContain('aspectRatio:')
     expect(report).toContain('orientation:')

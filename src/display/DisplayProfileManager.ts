@@ -157,14 +157,18 @@ export class DisplayProfileManager {
     return this.detectAndApply('calibration', { debounce: false })
   }
 
-  rememberFingerprint(profileId: string, fingerprint?: string): DetectionSnapshot {
+  rememberFingerprint(profileId?: string, fingerprint?: string): DetectionSnapshot {
     const runtime = this.environment.collectRuntime()
+    const id = profileId ?? this.snapshot?.activeProfile.id
+    if (!id) {
+      return this.snapshot ?? this.detectAndApply('identity', { debounce: false })
+    }
     const key = fingerprint ?? runtime.hardwareFingerprint
     this.persisted = {
       ...this.persisted,
       fingerprints: {
         ...this.persisted.fingerprints,
-        [key]: profileId,
+        [key]: id,
       },
     }
     this.storage.save(this.persisted)

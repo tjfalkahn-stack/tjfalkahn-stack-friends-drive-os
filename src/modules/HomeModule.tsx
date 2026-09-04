@@ -51,7 +51,7 @@ export function HomeModule({ layout }: { layout: ResolvedLayout }) {
           <div className="bridge-safe">
             <span className="kicker">Physical 12.4 map</span>
             <h1>Highway 16 North</h1>
-            <p>Keep the driving picture in the center column. Side rails stay secondary after the HDMI bridge.</p>
+            <p>Keep the driving picture in the 12.4 mapping region. Side rails stay secondary after the HDMI bridge.</p>
             <div className="bridge-metrics">
               <span>{speed} mph</span>
               <span>Gain {tow.brakeGain}</span>

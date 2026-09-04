@@ -115,9 +115,23 @@ export function SettingsModule() {
             <p className="fine">Calibration is saved per profile. RAM HDMI and Ford do not share values.</p>
           </fieldset>
 
-          <button type="button" onClick={() => rememberDisplay()}>
+          <button type="button" className="primary" onClick={() => rememberDisplay()}>
             Remember this display
           </button>
+          <p className="remember-as">
+            Remember this display as:
+            <strong> {applied.profile.label}</strong>
+          </p>
+          {overrideMode !== 'AUTO' ? (
+            <p className="fine">
+              Mode is {overrideMode.replaceAll('_', ' ')}. Auto currently detects {detectedProfile.label}.
+              This stores {applied.profile.label}, not the Auto detection.
+            </p>
+          ) : snapshot.identity.fingerprintProfileId === applied.profile.id ? (
+            <p className="fine">This hardware fingerprint is already stored as {applied.profile.label}.</p>
+          ) : (
+            <p className="fine">Stores a hardware fingerprint for this screen so AUTO can recognize it later.</p>
+          )}
         </div>
       ) : (
         <div className="settings-panel diagnostics">

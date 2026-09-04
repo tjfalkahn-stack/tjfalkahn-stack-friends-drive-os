@@ -12,7 +12,7 @@ export function computeHardwareFingerprint(input: {
   devicePixelRatio: number
 }): string {
   const dpr = Math.round(input.devicePixelRatio * 100) / 100
-  return `${input.screenWidth}x${input.screenHeight}@${dpr}:${input.availWidth}x${input.availHeight}`
+  return `${input.screenWidth}x${input.screenHeight}@${dpr}`
 }
 
 export function isFullscreen(doc?: Document | null): boolean {

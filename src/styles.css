@@ -16,6 +16,11 @@
   --fd-font-scale: 1;
   --fd-bottom-rail: 80px;
   --fd-grid-columns: 2;
+  --fd-hero: 16 / 10;
+  --fd-map-top: 0%;
+  --fd-map-right: 0%;
+  --fd-map-bottom: 0%;
+  --fd-map-left: 0%;
   font-family: "Segoe UI Variable", "Avenir Next", "Helvetica Neue", sans-serif;
   color: var(--fd-ink);
   background: var(--fd-bg);
@@ -499,7 +504,7 @@ input[type='range'] {
 .physical-map {
   pointer-events: none;
   position: absolute;
-  inset: 8% 18%;
+  inset: var(--fd-map-top, 2%) var(--fd-map-right, 3%) var(--fd-map-bottom, 2%) var(--fd-map-left, 3%);
   border: 1px dashed rgba(215, 146, 74, 0.35);
   border-radius: 28px;
   display: flex;
@@ -510,6 +515,10 @@ input[type='range'] {
   font-size: 0.7em;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.hdmi-canvas .shell-main {
+  padding: var(--fd-map-top, 2%) var(--fd-map-right, 3%) var(--fd-map-bottom, 2%) var(--fd-map-left, 3%);
 }
 
 .ram-hdmi-home,
@@ -533,8 +542,9 @@ input[type='range'] {
 }
 
 .bridge-safe {
-  width: min(100%, 70%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 .bridge-metrics {
@@ -700,9 +710,13 @@ html[data-layout='ram-hdmi-bridge'] .shell {
   background: radial-gradient(circle at 50% 50%, #16110d, #0c0e12 72%);
 }
 
-.copy-status {
-  color: var(--fd-sage);
-  margin: 0;
+.remember-as {
+  margin: 8px 0 0;
+  font-size: 0.95em;
+}
+
+.remember-as strong {
+  color: var(--fd-copper);
 }
 
 .display-report {

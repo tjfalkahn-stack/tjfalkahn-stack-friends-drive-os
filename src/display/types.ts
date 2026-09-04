@@ -38,6 +38,14 @@ export type DisplayProfile = {
   minAspect?: number
   maxAspect?: number
   targetDevicePixelRatio?: number
+  minDevicePixelRatio?: number
+  maxDevicePixelRatio?: number
+  minScreenWidth?: number
+  maxScreenWidth?: number
+  preferredScreenWidth?: number
+  minScreenHeight?: number
+  maxScreenHeight?: number
+  preferredScreenHeight?: number
   layout: LayoutId
   safeArea: SafeArea
   touchTarget: number
@@ -95,8 +103,17 @@ export type ProfileScoreBreakdown = {
   height: number
   aspect: number
   devicePixelRatio: number
+  screen: number
   bridge: number
   identity: number
+}
+
+export type PhysicalMapInsets = {
+  topPct: number
+  rightPct: number
+  bottomPct: number
+  leftPct: number
+  coverage: number
 }
 
 export type ProfileScore = {
@@ -134,6 +151,7 @@ export type AppliedProfile = {
   browserLayout: string
   cameraLayout: string
   towLiveLayout: string
+  physicalMap: PhysicalMapInsets
 }
 
 export type DetectionSnapshot = {
