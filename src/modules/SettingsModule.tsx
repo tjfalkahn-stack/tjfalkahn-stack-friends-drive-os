@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { layoutLabel } from '../display/applyProfile'
 import { describeRememberedDisplay } from '../display/rememberedDisplay'
 import { formatDisplayReport } from '../display/report'
@@ -14,10 +14,45 @@ export function SettingsModule() {
     updateRememberedDisplay,
     forgetRememberedDisplay,
     resetDisplayMemory,
-    copyReport,
+    copyReportWithStatus,
   } = useDisplay()
-  const [copied, setCopied] = useState(false)
+  const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied' | 'manual'>('idle')
+  const reportRef = useRef<HTMLPreElement>(null)
+  const copyBusy = useRef(false)
+  const copyAttempt = useRef(0)
   const [tab, setTab] = useState<'display' | 'diagnostics'>('display')
+
+  useEffect(() => {
+    copyAttempt.current += 1
+    copyBusy.current = false
+    setCopyState('idle')
+    return () => { copyAttempt.current += 1 }
+  }, [snapshot, tab])
+
+  async function copyDisplayReport() {
+    if (copyBusy.current) return
+    copyBusy.current = true
+    const attempt = ++copyAttempt.current
+    setCopyState('copying')
+    try {
+      const result = await copyReportWithStatus()
+      if (attempt === copyAttempt.current) setCopyState(result.copied ? 'copied' : 'manual')
+    } catch {
+      if (attempt === copyAttempt.current) setCopyState('manual')
+    } finally {
+      if (attempt === copyAttempt.current) copyBusy.current = false
+    }
+  }
+
+  function selectReport() {
+    if (!reportRef.current) return
+    const range = document.createRange()
+    range.selectNodeContents(reportRef.current)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    reportRef.current.focus()
+  }
 
   if (!snapshot) {
     return (
@@ -49,10 +84,10 @@ export function SettingsModule() {
       <header className="settings-head">
         <h1>Settings</h1>
         <div className="segment">
-          <button type="button" className={tab === 'display' ? 'is-on' : ''} onClick={() => setTab('display')}>
+          <button type="button" aria-pressed={tab === 'display'} className={tab === 'display' ? 'is-on' : ''} onClick={() => setTab('display')}>
             Display
           </button>
-          <button type="button" className={tab === 'diagnostics' ? 'is-on' : ''} onClick={() => setTab('diagnostics')}>
+          <button type="button" aria-pressed={tab === 'diagnostics'} className={tab === 'diagnostics' ? 'is-on' : ''} onClick={() => setTab('diagnostics')}>
             Diagnostics
           </button>
         </div>
@@ -86,6 +121,7 @@ export function SettingsModule() {
                 <button
                   key={option.mode}
                   type="button"
+                  aria-pressed={overrideMode === option.mode}
                   className={overrideMode === option.mode ? 'is-on' : ''}
                   onClick={() => setOverride(option.mode)}
                 >
@@ -93,7 +129,7 @@ export function SettingsModule() {
                 </button>
               ))}
             </div>
-            <p className="fine">AUTO is default. Manual override is stored on this display only.</p>
+            <p className="fine">AUTO is default. The override is saved in this browser; fingerprint mappings are managed below.</p>
           </fieldset>
 
           <fieldset>
@@ -114,25 +150,21 @@ export function SettingsModule() {
               <input
                 type="range"
                 min={40}
-                max={72}
+                max={Math.max(96, calibration.touchTarget)}
                 step={1}
                 value={calibration.touchTarget}
                 onChange={(event) => setCalibration(profileId, { touchTarget: Number(event.target.value) })}
               />
             </label>
-            <label>
-              Safe top {calibration.safeArea.top}px
-              <input
-                type="range"
-                min={8}
-                max={64}
-                step={1}
-                value={calibration.safeArea.top}
-                onChange={(event) =>
-                  setCalibration(profileId, { safeArea: { top: Number(event.target.value) } })
-                }
-              />
-            </label>
+            {(['top', 'right', 'bottom', 'left'] as const).map(edge => (
+              <label key={edge}>
+                Safe {edge} {calibration.safeArea[edge]}px
+                <input type="range" min={Math.min(8, calibration.safeArea[edge])} max={Math.max(64, calibration.safeArea[edge])} step={1}
+                  value={calibration.safeArea[edge]}
+                  onChange={event => setCalibration(profileId, { safeArea: { [edge]: Number(event.target.value) } })} />
+              </label>
+            ))}
+            <p className="fine">Touch target is a minimum in browser CSS pixels, not physical panel pixels. Adapter scaling is separate.</p>
             <p className="fine">Calibration is saved per profile. RAM HDMI and Ford do not share values.</p>
           </fieldset>
 
@@ -208,23 +240,17 @@ export function SettingsModule() {
               <dd>{runtime.fullscreen ? 'yes' : 'no'}</dd>
             </div>
           </dl>
-          <button
-            type="button"
-            className={`primary ${copied ? 'is-on' : ''}`}
-            aria-live="polite"
-            onPointerUp={() => {
-              setCopied(true)
-              void copyReport()
-            }}
-            onClick={() => {
-              setCopied(true)
-              void copyReport()
-            }}
-          >
-            {copied ? 'Copied' : 'Copy Display Report'}
-          </button>
-          {copied ? <p className="copy-status">Display report copied. You can also select the text below.</p> : null}
-          <pre className="display-report" aria-label="Display report">
+          <p className="fine">HDMI application map coverage: {Math.round(applied.physicalMap.coverage * 100)}%. This describes the software inset rectangle, not measured physical-panel coverage.</p>
+          <div className="remember-actions">
+            <button type="button" className="primary" disabled={copyState === 'copying'} onClick={() => void copyDisplayReport()}>
+              {copyState === 'copying' ? 'Copying…' : copyState === 'copied' ? 'Copied' : 'Copy Display Report'}
+            </button>
+            <button type="button" onClick={selectReport}>Select report text</button>
+          </div>
+          <p className="copy-status" role="status">
+            {copyState === 'copied' ? 'Display report copied.' : copyState === 'manual' ? 'Clipboard unavailable. Select the report below and copy it manually.' : copyState === 'copying' ? 'Waiting for clipboard confirmation…' : 'The report can also be selected and copied manually.'}
+          </p>
+          <pre className="display-report" aria-label="Display report" ref={reportRef} tabIndex={0}>
             {report}
           </pre>
         </div>

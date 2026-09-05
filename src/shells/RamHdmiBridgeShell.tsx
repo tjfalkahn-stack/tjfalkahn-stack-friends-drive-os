@@ -1,31 +1,21 @@
-import { NavButton, Wordmark } from '../os/chrome'
 import { ModuleViewport } from '../modules/ModuleViewport'
-import { useDisplay } from '../os/DisplayContext'
-import type { ModuleId } from '../os/catalog'
-
-const RAIL: ModuleId[] = ['home', 'media', 'web', 'dotty', 'towlive', 'cameras', 'vehicle', 'apps', 'settings']
+import { RamBack, RamHeader, RamNavigation } from '../ram/RamCockpit'
 
 export function RamHdmiBridgeShell() {
-  const { snapshot } = useDisplay()
   return (
     <div className="shell ram-hdmi">
-      <aside className="left-rail" aria-label="RAM HDMI">
-        <Wordmark kicker="HDMI bridge" />
-        {RAIL.map((id) => (
-          <NavButton key={id} id={id} compact />
-        ))}
+      <aside className="ram-rail">
+        <div className="ram-monogram" aria-label="Friends Drive">FD<span>DRIVE OS</span></div>
+        <RamNavigation />
+        <RamBack />
       </aside>
       <div className="hdmi-canvas">
-        <div className="physical-map" aria-hidden>
-          <span>12.4 mapping</span>
-        </div>
-        <main className="shell-main">
+        <RamHeader />
+        {/* Keep the computed --fd-map-* padding. The old outline was diagnostic only. */}
+        <main className="shell-main" id="ram-main" tabIndex={-1}>
           <ModuleViewport />
         </main>
       </div>
-      <p className="shell-footnote">
-        {snapshot?.detectedProfile.label} · composition for the physical RAM 12.4 panel, not a squeezed portrait UI
-      </p>
     </div>
   )
 }
