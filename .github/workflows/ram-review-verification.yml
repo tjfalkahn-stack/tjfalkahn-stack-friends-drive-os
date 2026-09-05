@@ -1,0 +1,77 @@
+name: RAM review verification (no deployment)
+
+on:
+  push:
+    branches: [review/ram-cockpit-verify-01]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record exact source snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/review-head.txt
+          git merge-base --is-ancestor e3e6ecfc8200badc692db2c6e32cab8776687085 HEAD
+          git archive --format=tar HEAD | gzip > evidence/review-source.tar.gz
+          git archive --format=tar e3e6ecfc8200badc692db2c6e32cab8776687085 | gzip > evidence/baseline-source.tar.gz
+          git diff e3e6ecfc8200badc692db2c6e32cab8776687085 HEAD > evidence/ram-cockpit.patch
+          git worktree add --detach /tmp/fd-baseline e3e6ecfc8200badc692db2c6e32cab8776687085
+          node --version > evidence/runtime.txt
+          npm --version >> evidence/runtime.txt
+      - name: Run baseline and review commands independently
+        shell: bash
+        run: |
+          set -uo pipefail
+          evidence="$GITHUB_WORKSPACE/evidence"
+          printf 'source\tcommand\texit_code\n' > "$evidence/results.tsv"
+          run_check() {
+            local source="$1" label="$2"
+            shift 2
+            "$@" 2>&1 | tee "$evidence/$source-$label.log"
+            local code=${PIPESTATUS[0]}
+            printf '%s\t%s\t%s\n' "$source" "$label" "$code" >> "$evidence/results.tsv"
+            return "$code"
+          }
+          for source in baseline review; do
+            if [ "$source" = baseline ]; then cd /tmp/fd-baseline; else cd "$GITHUB_WORKSPACE"; fi
+            if run_check "$source" npm-ci npm ci --no-audit --no-fund; then
+              run_check "$source" npm-test npm test || true
+              run_check "$source" npm-run-build npm run build || true
+            else
+              printf '%s\tnpm-test\tNOT_RUN\n%s\tnpm-run-build\tNOT_RUN\n' "$source" "$source" >> "$evidence/results.tsv"
+            fi
+          done
+      - name: Preserve installed locked dependencies for isolated browser review
+        if: always()
+        shell: bash
+        run: |
+          if [ -d node_modules ]; then tar -czf evidence/review-dependencies.tar.gz node_modules; fi
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ram-review-evidence
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Fail the check if any required command failed or was skipped
+        if: always()
+        shell: bash
+        run: |
+          test -f evidence/results.tsv
+          cat evidence/results.tsv
+          awk -F '\t' 'NR > 1 && $3 != "0" { failed=1 } END { exit failed }' evidence/results.tsv
