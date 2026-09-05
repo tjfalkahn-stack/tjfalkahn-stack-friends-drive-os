@@ -1,0 +1,206 @@
+/* RAM-only layer. Recognition tokens, mapping insets and other vehicle themes remain owned by the existing display system. */
+html:is([data-layout='ram-portrait'], [data-layout='ram-hdmi-bridge']) {
+  --fd-bg: #050910;
+  --fd-bg-2: #101a2a;
+  --fd-ink: #f4f7ff;
+  --fd-muted: #a7b7cf;
+  --fd-line: #26354b;
+  --fd-copper: #66acff;
+}
+html[data-layout] :is(.shell.ram-hdmi, .shell.ram-portrait) {
+  --ram-blue: #4d9bff;
+  --ram-chrome: #cbd7e9;
+  --ram-muted: #a7b7cf;
+  background: radial-gradient(ellipse at 85% 0, #13253d 0, #070d18 42%, #050910 80%);
+  color: #f4f7ff;
+  height: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  gap: 14px;
+  padding: max(var(--fd-safe-top), env(safe-area-inset-top)) max(var(--fd-safe-right), env(safe-area-inset-right)) max(var(--fd-safe-bottom), env(safe-area-inset-bottom)) max(var(--fd-safe-left), env(safe-area-inset-left));
+  font-family: 'Avenir Next', 'Segoe UI', Arial, sans-serif;
+  line-height: 1.4;
+  color-scheme: dark;
+}
+.shell.ram-hdmi { grid-template-columns: clamp(106px, 8.5vw, 144px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.shell.ram-portrait { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+:is(.ram-hdmi, .ram-portrait) .shell-main { min-width: 0; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #3d628b #0a1220; overscroll-behavior: contain; }
+.ram-hdmi .hdmi-canvas { min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+/* Retain the existing physicalMap-derived padding; this is not a native-panel resolution claim. */
+.ram-hdmi .hdmi-canvas .shell-main { padding: var(--fd-map-top) var(--fd-map-right) var(--fd-map-bottom) var(--fd-map-left); }
+:is(.ram-hdmi, .ram-portrait) :is(button, a, input) { -webkit-tap-highlight-color: transparent; }
+:is(.ram-hdmi, .ram-portrait) button { min-height: var(--fd-touch); max-width: 100%; cursor: pointer; border: 1px solid #344760; background: #121f32; border-radius: 16px; color: #f4f7ff; padding: 12px 18px; font: inherit; font-weight: 600; line-height: 1.3; touch-action: manipulation; }
+:is(.ram-hdmi, .ram-portrait) :is(button, a):focus-visible { outline: 3px solid #b2d4ff; outline-offset: 3px; }
+:is(.ram-hdmi, .ram-portrait) input:focus-visible { outline: 3px solid #b2d4ff; outline-offset: 2px; }
+:is(.ram-hdmi, .ram-portrait) button:active:not(:disabled), :is(.ram-hdmi, .ram-portrait) a:active { background: #294f7e; box-shadow: inset 0 3px 12px #0008; }
+:is(.ram-hdmi, .ram-portrait) button:disabled { opacity: .46; cursor: not-allowed; box-shadow: none; }
+:is(.ram-hdmi, .ram-portrait) :is(button.ram-primary, button.primary, button.is-on) { background: linear-gradient(135deg, #8bc0ff, #4a99fd); color: #041125; border-color: #a5cfff; box-shadow: 0 4px 22px #2c85fc22; }
+:is(.ram-hdmi, .ram-portrait) :is(button.is-on, button[aria-pressed='true']) { outline-offset: -4px; outline: 1px solid #c7e1ff; }
+:is(.ram-hdmi, .ram-portrait) svg { width: 28px; height: 28px; flex-shrink: 0; }
+:is(.ram-hdmi, .ram-portrait) h1 { font-size: clamp(2em, 3.3vw, 3.4em); line-height: 1.08; letter-spacing: -.045em; }
+:is(.ram-hdmi, .ram-portrait) h2 { font-size: 1.3em; line-height: 1.25; letter-spacing: -.025em; }
+:is(.ram-hdmi, .ram-portrait) p { margin: 0; }
+:is(.ram-hdmi, .ram-portrait) a { color: #b8d7ff; text-underline-offset: 4px; }
+.ram-rail { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 24px; padding: 20px 8px 10px; border: 1px solid #26354b; border-radius: 26px; background: linear-gradient(180deg, #111e32, #0a1220); box-shadow: 12px 0 36px #0002; }
+.ram-monogram { align-self: start; text-align: center; color: #e9f0ff; font-size: 1.8em; font-weight: 800; letter-spacing: -.06em; }
+.ram-monogram span { display: block; margin-top: 2px; color: #7da0ce; font-size: .28em; letter-spacing: .2em; }
+.ram-nav { min-height: 0; min-width: 0; gap: 12px; }
+.ram-nav-side { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.ram-nav-secondary { min-width: 0; min-height: 0; display: flex; gap: 12px; }
+.ram-nav-side .ram-nav-secondary { flex-direction: column; overflow-y: auto; padding: 4px; }
+.ram-nav-side .ram-nav-secondary > button { flex: 0 0 auto; }
+:is(.ram-hdmi, .ram-portrait) .ram-nav-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 16px 6px; background: transparent; border: 1px solid transparent; font-size: .85em; font-weight: 600; white-space: nowrap; }
+.ram-nav-button > span:first-child { display: flex; }
+:is(.ram-hdmi, .ram-portrait) .ram-nav-button.is-active { background: linear-gradient(150deg, #285994, #142c4c); border-color: #589eee; color: #e6f2ff; box-shadow: inset 0 1px #a6d0ff40, 0 8px 20px #0003; }
+:is(.ram-hdmi, .ram-portrait) .ram-back { display: inline-flex; justify-content: center; align-items: center; gap: 9px; padding: 12px; }
+.ram-back > span:first-child { font-size: 1.5em; line-height: 1; }
+.ram-nav-bottom { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; background: #0f1b2d; border: 1px solid #304665; border-radius: 22px; padding: 6px; gap: 6px; }
+.ram-nav-bottom .ram-nav-secondary { overflow-x: auto; align-items: stretch; gap: 6px; padding: 0 3px; }
+.ram-nav-bottom .ram-nav-button { min-width: max(var(--fd-touch), 74px); }
+.ram-nav-bottom .ram-nav-secondary > .ram-nav-button { flex: 1 0 var(--fd-touch); }
+.ram-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 8px 2% 20px; border-bottom: 1px solid #233248; }
+.ram-edition { min-width: 0; }
+.ram-eyebrow { display: block; color: #8abaff; font-size: .7em; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.ram-edition > strong { display: block; margin-top: 6px; color: #dce6f5; font-size: 1.2em; font-weight: 800; letter-spacing: .08em; }
+.ram-edition > strong span { margin-left: 9px; font-size: .56em; color: #9aacc6; font-weight: 500; letter-spacing: .13em; }
+.ram-header-tools { display: flex; align-items: center; gap: 28px; }
+.ram-time { font-size: 1.35em; font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:is(.ram-hdmi, .ram-portrait) .ram-fullscreen { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #132035; font-size: .85em; }
+.ram-fullscreen > span:first-child { font-size: 1.7em; }
+.ram-header > .ram-status { flex-basis: 100%; }
+.ram-home { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(18px, 2vw, 30px); min-height: 100%; }
+.ram-hero { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; padding: clamp(24px, 3vw, 48px); min-width: 0; min-height: 520px; border: 1px solid #38597b; border-radius: 28px; overflow: hidden; background: radial-gradient(ellipse at 100% 85%, #1357a57a, transparent 55%), linear-gradient(148deg, #1d3757 0%, #111f33 43%, #090f19 100%); box-shadow: inset 0 1px #bddcff29, 0 24px 55px #0004; }
+.ram-hero::after { content: ''; position: absolute; z-index: -1; width: 120%; height: 34%; bottom: -10%; left: 0; transform: rotate(-24deg); border-top: 1px solid #579dff6b; border-bottom: 1px solid #579dff33; background: linear-gradient(180deg, #2b73cf14, transparent); pointer-events: none; }
+.ram-hero-top, .ram-hero-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.ram-hero-top .ram-eyebrow { color: #bbd6fc; }
+.ram-series { color: #9cb6d8; font-size: .7em; letter-spacing: .1em; white-space: nowrap; }
+.ram-hero-copy { position: relative; padding: 20px 0; }
+.ram-overline { color: #b9cae2; font-size: 1.02em; margin-bottom: 24px !important; }
+:is(.ram-hdmi, .ram-portrait) .ram-hero h1 { font-size: clamp(2.8em, 4.5vw, 5em); font-weight: 750; letter-spacing: -.06em; line-height: 1.03; }
+.ram-hero h1 span { color: #93bdff; }
+.ram-hero h1 + p { margin-top: 26px; color: #b3c6df; font-size: 1.05em; line-height: 1.7; }
+.ram-hero .ram-primary { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 34px; text-align: left; }
+.ram-hero .ram-primary > span:last-child { margin-left: auto; font-size: 1.35em; }
+.ram-hero-bottom { padding-top: 20px; border-top: 1px solid #688ab334; color: #879fbe; font-size: .6em; font-weight: 600; letter-spacing: .14em; }
+.ram-home-shortcuts { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 16px; padding: 12px 0; }
+.ram-section-label { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.ram-section-label > span:last-child:not(.ram-badge) { color: #a2b0c4; font-size: .8em; }
+:is(.ram-hdmi, .ram-portrait) .ram-shortcut { display: flex; align-items: center; gap: 18px; min-height: max(var(--fd-touch), 126px); padding: 22px; text-align: left; border: 1px solid #2c4160; background: linear-gradient(120deg, #14233a, #0d1728); box-shadow: inset 0 1px #9fc0f00d; border-radius: 22px; }
+.ram-shortcut-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: 15px; background: #203a5d; color: #a8ceff; }
+.ram-shortcut-copy { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ram-shortcut-copy > strong { font-size: 1.15em; font-weight: 650; letter-spacing: -.02em; }
+.ram-shortcut-copy > span { color: #a1b2ca; font-size: .8em; font-weight: 400; }
+.ram-arrow { margin-left: auto; color: #8fafd9; font-size: 1.2em; }
+.ram-home-note { display: flex; gap: 16px; align-items: center; margin-top: 14px; padding: 12px 8px; color: #bacbe4; font-size: .9em; line-height: 1.8; }
+.ram-home-note p > span { color: #879bb9; font-size: .9em; }
+.ram-note-rule { height: 44px; width: 2px; flex-shrink: 0; background: linear-gradient(#589fff, #1c3558); }
+.ram-portrait .ram-home { grid-template-columns: minmax(0, 1fr); min-height: 100%; }
+.ram-portrait .ram-hero { min-height: 420px; }
+.ram-portrait .ram-home-shortcuts { padding-top: 0; }
+.ram-portrait .ram-hero h1 { font-size: clamp(2.8em, 7vw, 5em); }
+.ram-view { display: flex; flex-direction: column; min-height: 100%; min-width: 0; gap: 24px; padding: 4px; }
+.ram-page-heading { padding: 8px 0 6px; }
+.ram-page-heading h1 { margin: 12px 0 14px; }
+.ram-page-heading p { color: #a4b7d2; font-size: 1em; }
+.ram-surface { min-width: 0; background: linear-gradient(135deg, #142139, #0c1525); border: 1px solid #2c405d; border-radius: 24px; padding: clamp(20px, 2.2vw, 32px); }
+.ram-media-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 22px; }
+.ram-badge { display: inline-flex; padding: 7px 11px; background: #182f4e; border: 1px solid #3a5d88; border-radius: 8px; font-size: .7em; color: #b3d5ff; white-space: nowrap; }
+.ram-local-media { display: flex; flex-direction: column; gap: 18px; }
+.ram-media-empty { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 300px; gap: 18px; text-align: center; padding: 24px; background: radial-gradient(ellipse, #193c674f, #050b16); border: 1px solid #293c55; border-radius: 18px; }
+.ram-media-empty h2 { max-width: 15em; }
+.ram-media-empty p { color: #a7b7ce; }
+.ram-media-symbol { display: grid; place-items: center; width: 82px; height: 82px; border: 1px solid #4777b0; border-radius: 23px; background: #163357; color: #9fccff; }
+.ram-media-symbol svg { width: 40px; height: 40px; }
+.ram-file-input { display: none; }
+.ram-media-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.ram-media-actions > button:first-child { flex: 1; }
+.ram-file-name { overflow-wrap: anywhere; color: #c6d8f3; }
+.ram-player { display: block; width: 100%; max-height: 50vh; min-height: 120px; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border: 1px solid #2d4563; border-radius: 16px; }
+.ram-services { display: flex; flex-direction: column; align-items: stretch; gap: 20px; }
+.ram-services > p { color: #a6b8d1; }
+:is(.ram-hdmi, .ram-portrait) .ram-service-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 20px; min-height: var(--fd-touch); background: #18283f; border: 1px solid #344e70; border-radius: 15px; color: #f0f6ff; text-decoration: none; }
+.ram-service-link > span { color: #a5bddf; font-size: .76em; }
+.ram-fine { color: #9eafc8; font-size: .82em; line-height: 1.7; }
+.ram-address-bar { margin-top: 22px; }
+.ram-address-bar > label { display: block; font-size: .82em; margin: 0 0 10px; color: #b5c5db; }
+.ram-address-bar > div { display: flex; min-width: 0; gap: 12px; }
+.ram-address-bar input { flex: 1; min-width: 0; min-height: var(--fd-touch); padding: 16px; color: #f1f7ff; background: #070e1b; border: 1px solid #4b6488; border-radius: 14px; font: inherit; }
+.ram-address-bar input::placeholder { color: #8298b6; }
+.ram-web-launcher > .ram-fine { margin-top: 16px; }
+.ram-bookmarks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.ram-web-note { display: flex; align-items: flex-start; gap: 20px; padding: 20px 4px; color: #8ea6c7; max-width: 56em; }
+.ram-web-note p { display: flex; flex-direction: column; gap: 9px; }
+.ram-web-note strong { color: #c6d7ef; font-weight: 500; }
+.ram-app-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ram-demo-view { display: flex; flex-direction: column; gap: 20px; min-height: 100%; }
+.ram-demo-notice { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid #716344; background: #302c22; color: #f2dfb2; border-radius: 16px; font-size: .9em; }
+.ram-demo-content { flex: 1; min-height: 320px; min-width: 0; }
+:is(.ram-hdmi, .ram-portrait) .settings { height: auto; min-height: 100%; padding: 4px; gap: 24px; }
+:is(.ram-hdmi, .ram-portrait) .settings-head { gap: 16px; flex-wrap: wrap; align-items: center; }
+:is(.ram-hdmi, .ram-portrait) .settings-head .segment { display: flex; gap: 8px; flex-wrap: wrap; }
+:is(.ram-hdmi, .ram-portrait) .settings-panel { display: grid; gap: 20px; }
+:is(.ram-hdmi, .ram-portrait) :is(fieldset, .spec-list) { min-width: 0; margin: 0; border: 1px solid #2d4261; border-radius: 20px; padding: 24px; background: #101c2d; }
+:is(.ram-hdmi, .ram-portrait) fieldset legend { padding: 0 10px; color: #c3d6f4; font-size: .9em; }
+:is(.ram-hdmi, .ram-portrait) .spec-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
+:is(.ram-hdmi, .ram-portrait) .spec-list > div { min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px 0 14px; border-bottom: 1px solid #283950; }
+:is(.ram-hdmi, .ram-portrait) .spec-list dt { font-size: .78em; color: #9eb3cf; }
+:is(.ram-hdmi, .ram-portrait) .spec-list dd { margin: 0; text-align: left; overflow-wrap: anywhere; color: #e5efff; }
+:is(.ram-hdmi, .ram-portrait) .override-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+:is(.ram-hdmi, .ram-portrait) .override-grid button { min-width: 0; white-space: normal; }
+:is(.ram-hdmi, .ram-portrait) .settings label { display: grid; gap: 8px; margin: 18px 0; color: #cfddf3; }
+:is(.ram-hdmi, .ram-portrait) .settings input[type='range'] { width: 100%; min-height: var(--fd-touch); margin: 0; accent-color: #7bbaff; cursor: pointer; }
+:is(.ram-hdmi, .ram-portrait) .settings input[type='range']::-webkit-slider-thumb { width: 30px; height: 30px; }
+:is(.ram-hdmi, .ram-portrait) .settings :is(.fine, .remember-as) { overflow-wrap: anywhere; }
+:is(.ram-hdmi, .ram-portrait) .settings .fine { color: #9fb1cc; line-height: 1.65; margin: 14px 0 0; }
+:is(.ram-hdmi, .ram-portrait) .remember-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+:is(.ram-hdmi, .ram-portrait) .display-report { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .86em; line-height: 1.65; user-select: text; cursor: text; }
+.ram-status, .ram-error { padding: 14px 18px; margin-top: 14px !important; border: 1px solid #395576; border-radius: 12px; color: #c0dcff; background: #13233c; overflow-wrap: anywhere; }
+.ram-error { color: #ffd4cd; border-color: #b47369; background: #35201f; }
+.ram-portrait .ram-header { padding: 4px 0 14px; }
+.ram-portrait .ram-media-layout { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) {
+  .ram-hdmi .ram-home { grid-template-columns: minmax(0, 1fr); }
+  .ram-hdmi .ram-hero { min-height: 400px; }
+  :is(.ram-hdmi, .ram-portrait) .ram-media-layout { grid-template-columns: minmax(0, 1fr); }
+  .ram-header-tools { gap: 14px; }
+  .ram-home-note { margin-top: 0; }
+}
+@media (max-width: 760px) {
+  :is(.ram-hdmi, .ram-portrait) .ram-bookmarks { grid-template-columns: minmax(0, 1fr); }
+  .ram-app-list { grid-template-columns: minmax(0, 1fr); }
+  .ram-edition > strong span { display: block; margin: 4px 0 0; }
+  .ram-header-tools { margin-left: auto; }
+  .ram-header { padding-bottom: 14px; }
+  .ram-hero { padding: 24px; }
+  :is(.ram-hdmi, .ram-portrait) .spec-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 540px) {
+  /* Keep Home, All apps and Settings fully visible on narrow, large-control screens.
+     Media and Web remain available in All apps and through Home shortcuts. */
+  .ram-nav-bottom .ram-nav-secondary > button:not([data-nav-id='apps']) { display: none; }
+  .ram-nav-bottom .ram-nav-secondary { overflow: visible; }
+  .ram-nav-bottom .ram-nav-secondary > button[data-nav-id='apps'] { flex: 1 1 0; min-width: 0; }
+
+  .ram-header-tools { flex: 1 0 100%; justify-content: space-between; }
+  .ram-portrait .ram-header { gap: 8px; }
+  .ram-address-bar > div { flex-direction: column; }
+  .ram-hero-top { flex-wrap: wrap; }
+  .ram-hero-bottom { flex-wrap: wrap; }
+  .ram-shortcut-icon { width: 38px; height: 38px; }
+  :is(.ram-hdmi, .ram-portrait) .ram-shortcut { padding: 18px; gap: 12px; }
+  :is(.ram-hdmi, .ram-portrait) .override-grid { grid-template-columns: minmax(0, 1fr); }
+  :is(.ram-hdmi, .ram-portrait) .settings-head .segment { width: 100%; }
+  :is(.ram-hdmi, .ram-portrait) .settings-head .segment > button { flex: 1; }
+}
+@media (max-height: 700px) {
+  .ram-rail { gap: 12px; padding-top: 12px; }
+  .ram-header { padding-bottom: 8px; }
+  .ram-home { min-height: auto; }
+  .ram-hero { min-height: 400px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.ram-hdmi, .ram-portrait), :is(.ram-hdmi, .ram-portrait) *, :is(.ram-hdmi, .ram-portrait) *::before, :is(.ram-hdmi, .ram-portrait) *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* Programmatic module focus is for reading order, not an everyday mapping outline. */
+:is(.ram-hdmi, .ram-portrait) .shell-main:focus { outline: none; }
