@@ -1,0 +1,47 @@
+name: RAM sports review (no deployment)
+on:
+  push:
+    branches: [review/ram-sports-live-03]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ram-sports-review
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Record genuine Git source
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/head.txt
+          git log --format='%H %P %s' -10 > evidence/history.txt
+          git bundle create evidence/review.bundle HEAD refs/heads/review/ram-sports-live-03
+          node --version > evidence/runtime.txt
+          npm --version >> evidence/runtime.txt
+      - name: Install locked dependencies
+        run: set -o pipefail; npm ci 2>&1 | tee evidence/npm-ci.log
+      - name: Project tests
+        run: set -o pipefail; npm test 2>&1 | tee evidence/npm-test.log
+      - name: Typecheck and production build
+        run: set -o pipefail; npm run build 2>&1 | tee evidence/npm-build.log
+      - name: Export installed dependencies
+        if: always()
+        run: |
+          if [ -d node_modules ]; then tar -czf evidence/dependencies.tar.gz node_modules; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ram-sports-review-${{ github.sha }}
+          path: evidence/
+          retention-days: 7
