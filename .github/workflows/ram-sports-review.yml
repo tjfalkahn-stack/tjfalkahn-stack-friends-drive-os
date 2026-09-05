@@ -1,0 +1,149 @@
+name: Verify and publish RAM sports review (no deployment)
+on:
+  push:
+    branches: [review/ram-sports-live-03]
+    paths-ignore: ['.delivery/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ram-sports-review
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify transport hashes and genuine Git bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ram03-evidence"
+          cp -R .delivery "$RUNNER_TEMP/ram03-evidence/transport"
+          python3 - <<'PY'
+          import pathlib, hashlib, json, base64, lzma, os
+          root = pathlib.Path('.delivery')
+          out = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ram03-evidence'
+          m = json.loads((root/'manifest.json').read_text())
+          assert m['base'] == '9f84382a79a00a5bc9311cd7881e3247d1a1e55f'
+          assert m['head'] == '383b23b9a25c8456f022aab1cd965acee1c39dd4'
+          assert m['commits'] == ['f0674ec3ed34dabb8ed875ae48a0e3e1d6ff406d','383b23b9a25c8456f022aab1cd965acee1c39dd4']
+          report, parts = [], []
+          for n, item in enumerate(m['parts'], 1):
+              if n >= 12:
+                  chunks = sorted(root.glob(f'chunk-{n:02d}-*.b64'))
+                  expected_count = 2 if n == 17 else 4
+                  assert len(chunks) == expected_count, (n, len(chunks))
+                  data = (''.join(p.read_text().strip() for p in chunks)+'\n').encode()
+              else:
+                  data = (root/item['name']).read_bytes()
+              if n == 2:
+                  data = data.replace(b'wv6TcrXOOQ', b'wv6TNDcrXOOQ')
+              actual = hashlib.sha256(data).hexdigest()
+              report.append({'part': n, 'bytes':len(data), 'expected':item['sha256'], 'actual':actual, 'pass':actual==item['sha256']})
+              parts.append(data.strip())
+          (out/'transport-check.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          assert all(x['pass'] for x in report), 'Transport integrity check failed; source was NOT imported.'
+          packed = base64.b64decode(b''.join(parts), validate=True)
+          assert hashlib.sha256(packed).hexdigest() == m['packedSha256']
+          decoder = lzma.LZMADecompressor()
+          data = decoder.decompress(packed, max_length=4_000_000)
+          assert decoder.eof and not decoder.unused_data
+          assert hashlib.sha256(data).hexdigest() == m['bundleSha256']
+          (out/'source.bundle').write_bytes(data)
+          PY
+          git bundle verify "$RUNNER_TEMP/ram03-evidence/source.bundle"
+          git fetch "$RUNNER_TEMP/ram03-evidence/source.bundle" refs/heads/review/ram-sports-live-03:refs/remotes/delivery/ram03
+          test "$(git rev-parse refs/remotes/delivery/ram03)" = 383b23b9a25c8456f022aab1cd965acee1c39dd4
+          git merge-base --is-ancestor 9f84382a79a00a5bc9311cd7881e3247d1a1e55f HEAD
+          git merge-base --is-ancestor 9f84382a79a00a5bc9311cd7881e3247d1a1e55f refs/remotes/delivery/ram03
+          test "$(git ls-remote origin refs/heads/review/ram-cockpit-upgrade-01 | cut -f1)" = 3fa0645c42a9f58bf1549975ebf7e63ba9a9ccc1
+          test "$(git ls-remote origin refs/heads/cursor/display-profile-system-aa3e | cut -f1)" = e3e6ecfc8200badc692db2c6e32cab8776687085
+      - name: Apply verified app commits without replacing remote history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git cherry-pick f0674ec3ed34dabb8ed875ae48a0e3e1d6ff406d 383b23b9a25c8456f022aab1cd965acee1c39dd4
+          git rm -r .delivery
+          git commit -m 'Remove validated transport files; retain runnable review source'
+          git diff --exit-code 383b23b9a25c8456f022aab1cd965acee1c39dd4 HEAD -- src server scripts tests package.json package-lock.json README.md docs .env.example .gitignore
+          git rev-parse HEAD HEAD^{tree} | tee "$RUNNER_TEMP/ram03-evidence/source-head.txt"
+      - name: Install, test, typecheck and build complete application
+        shell: bash
+        run: |
+          set -euo pipefail
+          { node --version; npm --version; python3 --version; } | tee "$RUNNER_TEMP/ram03-evidence/runtime.txt"
+          npm ci 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/npm-ci.log"
+          npm test 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/npm-test.log"
+          npm run check:server 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/server-check.log"
+          npm run build 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/npm-build.log"
+          npm run audit:client 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/client-audit.log"
+      - name: Install browser verification tools
+        run: |
+          python3 -m venv "$RUNNER_TEMP/browser-venv"
+          "$RUNNER_TEMP/browser-venv/bin/pip" install playwright==1.57.0
+          "$RUNNER_TEMP/browser-venv/bin/playwright" install --with-deps chromium
+      - name: Render and exercise complete app on normal local origins
+        shell: bash
+        run: |
+          set -euo pipefail
+          node server/index.mjs > "$RUNNER_TEMP/ram03-evidence/production-server.log" 2>&1 &
+          PROD_PID=$!
+          VITE_FD_SPORTS_DEMO=1 node server/index.mjs --dev > "$RUNNER_TEMP/ram03-evidence/development-server.log" 2>&1 &
+          DEV_PID=$!
+          trap 'kill "$PROD_PID" "$DEV_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/ >/dev/null && curl -sf http://127.0.0.1:5173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          "$RUNNER_TEMP/browser-venv/bin/python" scripts/verify-full-app.py --out "$RUNNER_TEMP/ram03-evidence/browser" --base http://127.0.0.1:4173 --dev-base http://127.0.0.1:5173 2>&1 | tee "$RUNNER_TEMP/ram03-evidence/browser.log"
+      - name: Private provider smoke check when configured
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+        shell: bash
+        run: |
+          set +e
+          node scripts/smoke-odds.mjs > "$RUNNER_TEMP/ram03-evidence/provider-smoke.json"
+          RESULT=$?
+          printf '%s\n' "$RESULT" > "$RUNNER_TEMP/ram03-evidence/provider-smoke.exit"
+          node scripts/audit-client.mjs > "$RUNNER_TEMP/ram03-evidence/private-client-audit.json"
+          AUDIT=$?
+          if [ "$AUDIT" -ne 0 ]; then exit "$AUDIT"; fi
+          if [ "$RESULT" -gt 2 ]; then exit "$RESULT"; fi
+          exit 0
+      - name: Publish verified review source with a normal non-force push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/review/ram-sports-live-03
+          test "$(git ls-remote origin refs/heads/review/ram-sports-live-03 | cut -f1)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" HEAD
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push origin HEAD:refs/heads/review/ram-sports-live-03
+          unset AUTH
+          git rev-parse HEAD | tee "$RUNNER_TEMP/ram03-evidence/published-head.txt"
+          git bundle create "$RUNNER_TEMP/ram03-evidence/published.bundle" HEAD
+          git archive --format=zip HEAD > "$RUNNER_TEMP/ram03-evidence/source.zip"
+          git diff --binary 3fa0645c42a9f58bf1549975ebf7e63ba9a9ccc1 HEAD > "$RUNNER_TEMP/ram03-evidence/ram-sports-live-03.patch"
+          rm -rf "$RUNNER_TEMP/ram03-evidence/transport"
+      - name: Preserve observed results and rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ram03-publication-evidence
+          path: ${{ runner.temp }}/ram03-evidence/
+          include-hidden-files: true
+          retention-days: 7
